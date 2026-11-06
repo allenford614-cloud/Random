@@ -1,0 +1,300 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Snap Send Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: header, then the layer diagram beside a caption panel that drives the walkthrough; stacks on phones */
+:root {
+  --bg: #fbfaf3;
+  --surface: #ffffff;
+  --ink: #121211;
+  --muted: #5d5c52;
+  --line: #121211;
+  --snap: #fffc00;
+  --snap-ink: #121211;
+  --data: #1e1e1c;
+  --data-ink: #ffffff;
+  --chip: #ffffff;
+  --soft: #f1efe2;
+  --focus: #2f6bff;
+  --font-display: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111110; --surface: #1d1d1b; --ink: #f3f2ea; --muted: #a9a89c; --line: #e9e8de;
+    --snap: #fffc00; --snap-ink: #121211; --data: #f3f2ea; --data-ink: #121211;
+    --chip: #1d1d1b; --soft: #26261f; --focus: #8fb0ff; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111110; --surface: #1d1d1b; --ink: #f3f2ea; --muted: #a9a89c; --line: #e9e8de;
+  --snap: #fffc00; --snap-ink: #121211; --data: #f3f2ea; --data-ink: #121211;
+  --chip: #1d1d1b; --soft: #26261f; --focus: #8fb0ff; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 40px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.sub { margin: 6px 0 0; color: var(--muted); font-size: 17px; }
+.mark { display: inline-block; background: var(--snap); color: var(--snap-ink); padding: 0 8px; border-radius: 6px; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+
+.stage { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 14px; min-width: 0; }
+.scroll { overflow-x: auto; }
+svg.diagram { display: block; width: 100%; min-width: 560px; height: auto; }
+
+.panel { background: var(--surface); border: 2px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (min-width: 901px) { .panel { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); } }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.step-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; line-height: 1.15; margin: 2px 0 0; text-wrap: balance; }
+.call { align-self: flex-start; font-family: var(--font-mono); font-size: 14px; background: var(--snap); color: var(--snap-ink); border: 2px solid var(--line); border-radius: 8px; padding: 4px 10px; }
+.call[hidden] { display: none !important; }
+.desc { margin: 0; font-size: 16.5px; }
+.kind { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); }
+.kind svg { flex: none; }
+
+.steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.steps button {
+  font: 700 15px/1 var(--font-body); min-width: 40px; height: 40px; padding: 0 10px; border-radius: 999px;
+  border: 2px solid var(--line); background: var(--chip); color: var(--ink); cursor: pointer;
+}
+.steps button[aria-current="step"] { background: var(--snap); color: var(--snap-ink); }
+.controls { display: flex; gap: 8px; }
+.controls button {
+  flex: 1; font: 700 15px/1 var(--font-body); height: 44px; border-radius: 12px; border: 2px solid var(--line);
+  background: var(--chip); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.controls button.primary { background: var(--ink); color: var(--bg); }
+.controls button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* diagram */
+.layer { font: 700 19px var(--font-body); fill: var(--muted); }
+.box rect { stroke: var(--line); stroke-width: 3; }
+.box.client rect { fill: var(--snap); }
+.box.client text { fill: var(--snap-ink); }
+.box.core rect { fill: var(--surface); }
+.box.core text { fill: var(--ink); }
+.box.data rect { fill: var(--data); }
+.box.data text { fill: var(--data-ink); }
+.box text { font: 600 24px var(--font-body); text-anchor: middle; dominant-baseline: central; }
+.box text.small { font-weight: 500; font-size: 20px; }
+.arrow path.l { fill: none; stroke: var(--line); stroke-width: 3; }
+.arrow.dashed path.l { stroke-dasharray: 12 9; }
+.chipg rect { fill: var(--surface); stroke: var(--line); stroke-width: 2; }
+.chipg text { font: 700 20px var(--font-body); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.head { fill: var(--line); }
+
+.box, .arrow, .chipg { transition: opacity 0.35s ease; }
+.focus .box:not(.on), .focus .arrow:not(.on), .focus .chipg:not(.on) { opacity: 0.16; }
+.focus .arrow.on path.l { stroke-width: 5; }
+.focus .arrow.on:not(.dashed) path.l { stroke-dasharray: 14 10; animation: flow 0.9s linear infinite; }
+.focus .arrow.on.dashed path.l { animation: flow 1.6s linear infinite; }
+.focus .chipg.on rect { fill: var(--snap); }
+.focus .chipg.on text { fill: var(--snap-ink); }
+@keyframes flow { to { stroke-dashoffset: -24; } }
+@media (prefers-reduced-motion: reduce) {
+  .box, .arrow, .chipg { transition: none; }
+  .focus .arrow.on path.l { animation: none !important; }
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Snapchat: Sending a Snap</h1>
+      <p class="sub">What happens when you tap <span class="mark">send</span>, from your app to "Opened"</p>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div class="scroll">
+        <svg id="dg" class="diagram" viewBox="0 0 1540 1220" role="img" aria-labelledby="dgTitle">
+          <title id="dgTitle">Layer diagram of sending a snap: clients, API gateway, backend services, third-party push, AI ranking and data stores, with numbered arrows for steps 1 to 7.</title>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+              <path class="head" d="M0 0 L10 5 L0 10 Z"/>
+            </marker>
+          </defs>
+          <g id="layers"></g>
+          <g id="arrows"></g>
+          <g id="boxes"></g>
+          <g id="chips"></g>
+        </svg>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Step details">
+      <div>
+        <p class="eyebrow" id="eyebrow">Overview</p>
+        <h2 class="step-title" id="stepTitle">The whole system</h2>
+      </div>
+      <code class="call" id="call" hidden></code>
+      <p class="desc" id="desc" aria-live="polite"></p>
+      <div class="kind" id="kind"></div>
+      <nav class="steps" id="steps" aria-label="Choose a step"></nav>
+      <div class="controls">
+        <button type="button" id="prev" aria-label="Previous step">← Back</button>
+        <button type="button" id="play" class="primary">▶ Play</button>
+        <button type="button" id="next" aria-label="Next step">Next →</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+const BOXES = [
+  { id: 'you',    x: 260,  y: 160,  w: 360,  h: 80,  kind: 'client', lines: ['Your Snapchat app'] },
+  { id: 'friend', x: 1140, y: 160,  w: 360,  h: 80,  kind: 'client', lines: ["Friend's Snapchat app"] },
+  { id: 'gw',     x: 260,  y: 340,  w: 1140, h: 80,  kind: 'core',   lines: ['API gateway: logged in? friends? which service?'] },
+  { id: 'msg',    x: 260,  y: 520,  w: 360,  h: 80,  kind: 'core',   lines: ['Messaging'] },
+  { id: 'clean',  x: 700,  y: 520,  w: 360,  h: 80,  kind: 'core',   lines: ['Cleanup job'] },
+  { id: 'push',   x: 1140, y: 700,  w: 360,  h: 100, kind: 'core',   lines: ['Push notifications', '(Apple / Google)'] },
+  { id: 'rank',   x: 1140, y: 880,  w: 360,  h: 80,  kind: 'data',   lines: ['Send To ranking (ML)'] },
+  { id: 'db',     x: 260,  y: 1060, w: 240,  h: 80,  kind: 'data',   lines: ['Snaps database'] },
+  { id: 'media',  x: 700,  y: 1060, w: 360,  h: 80,  kind: 'data',   lines: ['Snap media storage'] },
+  { id: 'ev',     x: 1140, y: 1060, w: 360,  h: 80,  kind: 'data',   lines: ['Event stream'] },
+];
+const LAYERS = [['Clients (frontend)', 200], ['API layer', 380], ['Backend services', 560], ['Third-party APIs', 750], ['AI layer', 915], ['Data', 1100]];
+const ARROWS = [
+  { id: 'a1',   d: 'M440 246 V334',                  label: '1',             lx: 440,  ly: 290 },
+  { id: 'a2',   d: 'M440 426 V514',                  label: '2 · 4 · 5 · 6', lx: 440,  ly: 470 },
+  { id: 'a3d',  d: 'M368 606 V1054',                 label: '3 · 6',         lx: 368,  ly: 830 },
+  { id: 'a3m',  d: 'M530 606 V830 H770 V1054',       label: '3 · 5',         lx: 650,  ly: 830 },
+  { id: 'a4p',  d: 'M590 514 V470 H1300 V694',       label: '4',             lx: 945,  ly: 470 },
+  { id: 'a4f',  d: 'M1450 694 V246',                 label: '4',             lx: 1450, ly: 470 },
+  { id: 'a456', d: 'M1320 246 V334',                 label: '4 · 5 · 6',     lx: 1320, ly: 290 },
+  { id: 'a7',   d: 'M880 606 V1054', dashed: true,   label: '7',             lx: 880,  ly: 830 },
+];
+const STEPS = [
+  { key: 'all', chip: 'All', eyebrow: 'Overview', title: 'The whole system',
+    desc: 'Every box and arrow at once. Solid arrows are the snap\'s path; dashed arrows are background work. Press Play or pick a step to walk through it.',
+    boxes: BOXES.map(b => b.id), arrows: ARROWS.map(a => a.id), kind: null },
+  { key: '1', chip: '1', eyebrow: 'Step 1', title: 'Tap send', call: 'POST /snaps',
+    desc: 'You tap send. Your app uploads the snap to Snapchat\'s API gateway.',
+    boxes: ['you', 'gw'], arrows: ['a1'], kind: 'solid' },
+  { key: '2', chip: '2', eyebrow: 'Step 2', title: 'Check & route',
+    desc: 'The gateway checks that you\'re logged in and allowed to snap this friend, then routes the request to the Messaging service.',
+    boxes: ['gw', 'msg'], arrows: ['a2'], kind: 'solid' },
+  { key: '3', chip: '3', eyebrow: 'Step 3', title: 'Save', call: '201 Created · ID 44',
+    desc: 'Messaging saves the snap\'s record (status: delivered) in the database and the photo in media storage, then replies 201 with ID 44. Your chat list shows "Delivered".',
+    boxes: ['msg', 'db', 'media', 'you'], arrows: ['a3d', 'a3m'], kind: 'solid' },
+  { key: '4', chip: '4', eyebrow: 'Step 4', title: 'Notify', call: 'GET /snaps',
+    desc: 'Messaging asks Apple or Google to push a notification straight to your friend\'s phone. Their app then calls GET /snaps through the gateway, and the red square appears.',
+    boxes: ['msg', 'push', 'friend', 'gw'], arrows: ['a4p', 'a4f', 'a456', 'a2'], kind: 'solid' },
+  { key: '5', chip: '5', eyebrow: 'Step 5', title: 'Open', call: 'GET /snaps/44',
+    desc: 'Your friend taps the red square. Their app asks for snap 44, and Messaging pulls the photo from media storage.',
+    boxes: ['friend', 'gw', 'msg', 'media'], arrows: ['a456', 'a2', 'a3m'], kind: 'solid' },
+  { key: '6', chip: '6', eyebrow: 'Step 6', title: 'Update status', call: 'PATCH /snaps/44',
+    desc: 'The app marks snap 44 as opened. Messaging updates the status in the database, and your chat list shows "Opened".',
+    boxes: ['friend', 'gw', 'msg', 'db', 'you'], arrows: ['a456', 'a2', 'a3d'], kind: 'solid' },
+  { key: '7', chip: '7', eyebrow: 'Step 7', title: 'Delete', call: 'DELETE /snaps/44 (internal)',
+    desc: 'In the background, the Cleanup job deletes the photo from media storage, unless someone saved it in chat. No phone makes this call.',
+    boxes: ['clean', 'media'], arrows: ['a7'], kind: 'dashed' },
+  { key: 'ml', chip: 'Data & ML', eyebrow: 'Data & ML', title: 'Events, metric, prediction', call: 'snap_sent → snaps sent/day',
+    desc: 'Every send logs a snap_sent event. Counting them gives the metric: snaps sent per day. The same events train the Send To ranking, which predicts who you\'ll snap next and orders your Send To list.',
+    boxes: ['msg', 'ev', 'rank', 'you'], arrows: [], kind: null },
+];
+
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const svg = document.getElementById('dg');
+const gLayers = document.getElementById('layers'), gArrows = document.getElementById('arrows'), gBoxes = document.getElementById('boxes'), gChips = document.getElementById('chips');
+
+LAYERS.forEach(([name, y]) => { const t = el('text', { x: 24, y, class: 'layer', 'dominant-baseline': 'central' }, gLayers); t.textContent = name; });
+
+const boxNodes = {};
+BOXES.forEach(b => {
+  const g = el('g', { class: `box ${b.kind}`, 'data-id': b.id }, gBoxes);
+  el('rect', { x: b.x, y: b.y, width: b.w, height: b.h, rx: Math.min(40, b.h / 2) }, g);
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  if (b.lines.length === 1) { const t = el('text', { x: cx, y: cy }, g); t.textContent = b.lines[0]; }
+  else {
+    const t1 = el('text', { x: cx, y: cy - 16 }, g); t1.textContent = b.lines[0];
+    const t2 = el('text', { x: cx, y: cy + 18, class: 'small' }, g); t2.textContent = b.lines[1];
+  }
+  boxNodes[b.id] = g;
+});
+
+const arrowNodes = {}, chipNodes = {};
+ARROWS.forEach(a => {
+  const g = el('g', { class: `arrow${a.dashed ? ' dashed' : ''}` }, gArrows);
+  el('path', { d: a.d, class: 'l', 'marker-end': 'url(#ah)' }, g);
+  arrowNodes[a.id] = g;
+  const w = Math.max(44, a.label.length * 13 + 26);
+  const c = el('g', { class: 'chipg' }, gChips);
+  el('rect', { x: a.lx - w / 2, y: a.ly - 20, width: w, height: 40, rx: 20 }, c);
+  const t = el('text', { x: a.lx, y: a.ly }, c); t.textContent = a.label;
+  chipNodes[a.id] = c;
+});
+
+const stepsNav = document.getElementById('steps');
+const stepButtons = STEPS.map((s, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = `step-${s.key}`; b.textContent = s.chip;
+  b.setAttribute('aria-label', s.key === 'all' ? 'Overview' : `${s.eyebrow}: ${s.title}`);
+  b.addEventListener('click', () => { stop(); go(i); });
+  stepsNav.appendChild(b);
+  return b;
+});
+
+const $ = id => document.getElementById(id);
+const kindSvg = dashed => `<svg width="36" height="10" aria-hidden="true"><line x1="2" y1="5" x2="34" y2="5" stroke="currentColor" stroke-width="3" ${dashed ? 'stroke-dasharray="7 5"' : ''}/></svg>`;
+let cur = 0, timer = null;
+
+function go(i) {
+  cur = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[cur];
+  svg.classList.toggle('focus', s.key !== 'all');
+  Object.entries(boxNodes).forEach(([id, n]) => n.classList.toggle('on', s.boxes.includes(id)));
+  Object.entries(arrowNodes).forEach(([id, n]) => n.classList.toggle('on', s.arrows.includes(id)));
+  Object.entries(chipNodes).forEach(([id, n]) => n.classList.toggle('on', s.arrows.includes(id)));
+  $('eyebrow').textContent = s.eyebrow;
+  $('stepTitle').textContent = s.title;
+  $('desc').textContent = s.desc;
+  const call = $('call');
+  if (s.call) { call.textContent = s.call; call.hidden = false; } else call.hidden = true;
+  $('kind').innerHTML = s.kind ? `${kindSvg(s.kind === 'dashed')}<span>${s.kind === 'dashed' ? 'Dashed: background work, nobody waits on it' : 'Solid: the snap\'s live path'}</span>` : '';
+  stepButtons.forEach((b, k) => b.toggleAttribute('aria-current', k === cur) || (k === cur && b.setAttribute('aria-current', 'step')));
+  stepButtons.forEach((b, k) => { if (k === cur) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+  $('prev').disabled = cur === 0;
+  $('next').disabled = cur === STEPS.length - 1;
+}
+function stop() { if (timer) { clearInterval(timer); timer = null; } $('play').textContent = '▶ Play'; }
+function play() {
+  if (timer) { stop(); return; }
+  if (cur === STEPS.length - 1) go(0);
+  $('play').textContent = '❚❚ Pause';
+  go(cur === 0 ? 1 : cur);
+  timer = setInterval(() => { if (cur >= STEPS.length - 1) { stop(); return; } go(cur + 1); }, 4200);
+}
+$('prev').addEventListener('click', () => { stop(); go(cur - 1); });
+$('next').addEventListener('click', () => { stop(); go(cur + 1); });
+$('play').addEventListener('click', play);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { stop(); go(cur + 1); }
+  if (e.key === 'ArrowLeft') { stop(); go(cur - 1); }
+});
+go(0);
+</script>
+
+</body></html>
